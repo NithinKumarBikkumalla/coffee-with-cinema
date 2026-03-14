@@ -1,0 +1,171 @@
+/**
+ * promptBuilder.js — Constructs structured prompts for each AI generation type
+ */
+
+function buildScreenplayPrompt(title, genre, tone, premise, length) {
+    const sceneCount = length === 'feature' ? '40-60' : '10-15'
+    return {
+        system: `You are an expert Hollywood screenwriter. Write professional screenplays in proper Final Draft format.
+Always return VALID JSON only — no markdown, no code blocks, just raw JSON.
+Use proper 3-act structure: Setup (Act 1), Confrontation (Act 2), Resolution (Act 3).`,
+        user: `Write a complete ${genre.toLowerCase()} screenplay titled "${title}".
+Tone: ${tone}
+Premise: ${premise}
+Length: approximately ${sceneCount} scenes total across 3 acts.
+
+Return ONLY this JSON structure (no other text):
+{
+  "title": "${title}",
+  "acts": [
+    {
+      "act_number": 1,
+      "scenes": [
+        {
+          "scene_number": 1,
+          "slugline": "INT. LOCATION - DAY",
+          "action": "Vivid action description here.",
+          "dialogue": [
+            { "character": "CHARACTER NAME", "line": "Spoken line of dialogue.", "parenthetical": "optional tone note" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Write compelling, cinematic content. Make dialogue feel authentic. Include at least 3 named characters.`,
+    }
+}
+
+function buildCharacterPrompt(title, genre, tone, premise, characterNames, dialogueByChar) {
+    const charList = characterNames.map(name => {
+        const lines = (dialogueByChar[name] || []).slice(0, 5).join(' | ')
+        return `${name}: "${lines}"`
+    }).join('\n')
+
+    return {
+        system: `You are a professional script consultant specializing in deep character development.
+Always return VALID JSON only — no markdown, no preamble.`,
+        user: `For the ${genre} film "${title}" (${tone} tone):
+Premise: ${premise}
+
+Create detailed character profiles for these characters:
+${charList}
+
+Return ONLY a JSON array:
+[
+  {
+    "name": "Character Name",
+    "role": "protagonist|antagonist|supporting",
+    "age": "30s",
+    "backstory": "150-200 word backstory",
+    "personality_traits": ["trait1", "trait2", "trait3"],
+    "motivation": "Core motivation in one sentence",
+    "character_arc": "How they change through the story",
+    "relationship_to_protagonist": "How they relate to the main character"
+  }
+]`,
+    }
+}
+
+function buildSoundPrompt(scenes) {
+    const sceneList = scenes.slice(0, 30).map(s =>
+        `Scene ${s.sceneNumber}: ${s.slugline} — ${s.action?.slice(0, 100)}`
+    ).join('\n')
+
+    return {
+        system: `You are a professional sound designer and music supervisor for film.
+Always return VALID JSON only.`,
+        user: `Create a detailed sound design plan for these scenes:
+
+${sceneList}
+
+Return ONLY a JSON array (one object per scene):
+[
+  {
+    "scene_number": 1,
+    "ambient": "Environmental background sound description",
+    "sfx": ["specific sound effect 1", "specific sound effect 2"],
+    "music_mood": "Emotional quality and instrumentation description",
+    "music_genre": "Genre label (e.g. Orchestral thriller)",
+    "notes": "Director guidance note for the sound designer"
+  }
+]`,
+    }
+}
+
+function buildSchedulePrompt(scenes) {
+    const locationGroups = {}
+    scenes.forEach(s => {
+        const loc = s.slugline?.split(' — ')[0]?.replace(/^(INT\.|EXT\.)/, '').trim() || 'UNKNOWN'
+        if (!locationGroups[loc]) locationGroups[loc] = []
+        locationGroups[loc].push(s.sceneNumber)
+    })
+
+    return {
+        system: `You are an experienced film production manager with expertise in scheduling.
+Always return VALID JSON only.`,
+        user: `Create a realistic production schedule for a film with ${scenes.length} scenes.
+
+Location groups (scenes): ${JSON.stringify(locationGroups)}
+
+Return ONLY this JSON:
+{
+  "total_shoot_days": <number>,
+  "phases": [
+    {
+      "phase_name": "Pre-production",
+      "start_day": -14,
+      "end_day": -1,
+      "tasks": ["task 1", "task 2", "task 3"]
+    },
+    {
+      "phase_name": "Principal Photography",
+      "start_day": 1,
+      "end_day": <total_shoot_days>,
+      "tasks": ["task 1", "task 2"]
+    },
+    {
+      "phase_name": "Post-production",
+      "start_day": <total_shoot_days + 1>,
+      "end_day": <total_shoot_days + 30>,
+      "tasks": ["editing", "sound mixing", "color grading"]
+    }
+  ],
+  "shoot_days": [
+    {
+      "day": 1,
+      "location": "Location name",
+      "scenes": [1, 2, 3],
+      "estimated_hours": 10,
+      "notes": "Practical note for this shoot day"
+    }
+  ]
+}`,
+    }
+}
+
+function buildRegeneratePrompt(targetType, currentContent, surroundingContext, refinementNote) {
+    return {
+        system: `You are an expert Hollywood screenwriter. Rewrite only the requested section.
+Keep it consistent with surrounding context. Always return VALID JSON only.`,
+        user: `Rewrite this ${targetType}. Keep it consistent with context provided.
+${refinementNote ? `\nSpecific instruction: ${refinementNote}` : ''}
+
+Current content:
+${JSON.stringify(currentContent, null, 2)}
+
+Surrounding context:
+${JSON.stringify(surroundingContext, null, 2)}
+
+Return the rewritten ${targetType} as a JSON object matching the same structure as the current content.`,
+    }
+}
+
+module.exports = {
+    buildScreenplayPrompt,
+    buildCharacterPrompt,
+    buildSoundPrompt,
+    buildSchedulePrompt,
+    buildRegeneratePrompt,
+}

@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  hashedPassword String
+  createdAt      DateTime  @default(now())
+  projects       Project[]
+}
+
+model Project {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  genre       String
+  tone        String
+  premise     String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+  scenes      Scene[]
+  characters  Character[]
+  sound       SoundDesign[]
+  schedule    ProductionSchedule?
+  versions    ProjectVersion[]
+  exports     ExportLog[]
+}
+
+model Scene {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actNumber   Int      @default(1)
+  sceneNumber Int
+  slugline    String   @default("")
+  action      String   @default("")
+  dialogue    Json     @default("[]")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Character {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  role        String   @default("supporting")
+  profileJSON Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SoundDesign {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sceneNumber Int
+  ambient     String   @default("")
+  sfx         Json     @default("[]")
+  musicMood   String   @default("")
+  musicGenre  String   @default("")
+  notes       String   @default("")
+  updatedAt   DateTime @updatedAt
+}
+
+model ProductionSchedule {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scheduleJSON Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ProjectVersion {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  snapshotJSON  Json
+  changeNote    String?
+  savedAt       DateTime @default(now())
+}
+
+model ExportLog {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId     String
+  exportType String
+  exportedAt DateTime @default(now())
+}
