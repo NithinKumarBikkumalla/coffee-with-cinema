@@ -7,6 +7,7 @@ const {
     buildScreenplayPrompt, buildCharacterPrompt,
     buildSoundPrompt, buildSchedulePrompt, buildRegeneratePrompt,
     buildDialoguePrompt, buildRelationshipPrompt, buildShotListPrompt, buildEndingsPrompt,
+    buildPosterPrompt,
 } = require('../services/promptBuilder')
 
 // Helper: returns true only if user is owner OR an accepted editor collaborator
@@ -275,6 +276,35 @@ router.post('/endings', async (req, res) => {
     } catch (err) {
         console.error('Endings generation error:', err)
         res.status(500).json({ message: err.message || 'Endings generation failed' })
+    }
+})
+
+// POST /api/generate/poster — JSON
+router.post('/poster', async (req, res) => {
+    try {
+        const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
+
+        const project = await prisma.project.findUnique({ where: { id: projectId } })
+        if (!project) return res.status(404).json({ message: 'Project not found' })
+
+        const prompt = buildPosterPrompt(project.title, project.genre, project.tone, project.premise)
+        let posterData = await generateJSON(prompt)
+
+        if (!Array.isArray(posterData)) {
+            if (posterData && Array.isArray(posterData.concepts)) posterData = posterData.concepts
+            else posterData = []
+        }
+
+        const updated = await prisma.project.update({
+            where: { id: projectId },
+            data: { posterConcepts: posterData },
+        })
+
+        res.json(updated.posterConcepts)
+    } catch (err) {
+        console.error('Poster generation error:', err)
+        res.status(500).json({ message: err.message || 'Poster generation failed' })
     }
 })
 

@@ -12,6 +12,7 @@ import HelpModal from '../components/modals/HelpModal'
 import ContactModal from '../components/modals/ContactModal'
 import ShotListPanel from '../components/shots/ShotListPanel'
 import EndingsPanel from '../components/endings/EndingsPanel'
+import PosterGenerator from '../components/posters/PosterGenerator'
 import ShareModal from '../components/modals/ShareModal'
 
 const TABS = [
@@ -21,6 +22,7 @@ const TABS = [
     { id: 'sound', label: '🎵 Sound Design' },
     { id: 'shots', label: '🎥 Shot List' },
     { id: 'endings', label: '🔀 Endings' },
+    { id: 'posters', label: '🖼️ Movie Poster' },
 ]
 
 export default function ProjectView() {
@@ -179,6 +181,9 @@ export default function ProjectView() {
                 )}
                 {activeTab === 'endings' && (
                     <EndingsPanel project={project} setProject={setProject} isReadOnly={isReadOnly} />
+                )}
+                {activeTab === 'posters' && (
+                    <PosterGenerator project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
             </main>
 

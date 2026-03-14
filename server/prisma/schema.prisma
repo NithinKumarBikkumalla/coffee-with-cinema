@@ -36,6 +36,7 @@ model Project {
   relationshipMap Json @default("[]")
   shotList    Json @default("[]")
   endings     Json @default("[]")
+  posterConcepts Json @default("[]")
   collaborators Collaborator[]
   exports     ExportLog[]
 }

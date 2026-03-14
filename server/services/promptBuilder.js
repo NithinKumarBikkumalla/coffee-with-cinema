@@ -269,6 +269,34 @@ Return ONLY this JSON array:
   }
 }
 
+function buildPosterPrompt(title, genre, tone, premise) {
+  return {
+    system: `You are a professional film marketing executive and graphic designer. Always return VALID JSON only.`,
+    user: `Generate 3 distinct movie poster concepts for the ${genre} film "${title}" (${tone} tone).
+    Premise: ${premise}
+
+    For each concept, provide:
+    1. A catchy tagline
+    2. Visual style (e.g. Minimalist, Noir, Vibrant, Epic)
+    3. Key imagery (main characters, objects, setting)
+    4. Color palette
+    5. Typography description
+
+    Return ONLY a JSON array:
+    [
+      {
+        "concept_name": "Short descriptive name",
+        "tagline": "The hook",
+        "visual_style": "Artistic direction",
+        "key_imagery": "What is on the poster",
+        "color_palette": ["Color 1", "Color 2", "Color 3"],
+        "typography": "Font style and placement",
+        "mood_summary": "1-2 sentences on the vibe"
+      }
+    ]`,
+  }
+}
+
 module.exports = {
   buildScreenplayPrompt,
   buildCharacterPrompt,
@@ -279,4 +307,5 @@ module.exports = {
   buildRelationshipPrompt,
   buildShotListPrompt,
   buildEndingsPrompt,
+  buildPosterPrompt,
 }
