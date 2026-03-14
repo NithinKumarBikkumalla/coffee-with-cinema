@@ -6,6 +6,7 @@ const { pipeSSE } = require('../services/streamService')
 const {
     buildScreenplayPrompt, buildCharacterPrompt,
     buildSoundPrompt, buildSchedulePrompt, buildRegeneratePrompt,
+    buildDialoguePrompt, buildRelationshipPrompt,
 } = require('../services/promptBuilder')
 
 // POST /api/generate/screenplay — SSE streaming
@@ -148,6 +149,56 @@ router.post('/regenerate', async (req, res) => {
     } catch (err) {
         console.error('Regenerate error:', err)
         if (!res.headersSent) res.status(500).json({ message: err.message })
+    }
+})
+
+// POST /api/generate/dialogue — JSON
+router.post('/dialogue', async (req, res) => {
+    try {
+        const { projectId, character1, character2, contextPrompt } = req.body
+        const project = await prisma.project.findUnique({ where: { id: projectId } })
+        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+
+        const prompt = buildDialoguePrompt(character1, character2, contextPrompt, project.tone, project.genre)
+        const dialogueData = await generateJSON(prompt)
+
+        res.json(dialogueData)
+    } catch (err) {
+        console.error('Dialogue generation error:', err)
+        res.status(500).json({ message: err.message || 'Dialogue generation failed' })
+    }
+})
+
+// POST /api/generate/relationships — JSON
+router.post('/relationships', async (req, res) => {
+    try {
+        const { projectId } = req.body
+        const project = await prisma.project.findUnique({
+            where: { id: projectId }, include: { characters: true },
+        })
+        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!project.characters || project.characters.length < 2) {
+            return res.status(400).json({ message: 'Need at least 2 characters to map relationships.' })
+        }
+
+        const prompt = buildRelationshipPrompt(project.characters, project.title, project.genre)
+        let relData = await generateJSON(prompt)
+
+        if (!Array.isArray(relData)) {
+            if (relData && Array.isArray(relData.relationships)) relData = relData.relationships
+            else if (relData && Array.isArray(relData.edges)) relData = relData.edges
+            else relData = []
+        }
+
+        const updated = await prisma.project.update({
+            where: { id: projectId },
+            data: { relationshipMap: relData },
+        })
+
+        res.json(updated.relationshipMap)
+    } catch (err) {
+        console.error('Relationship mapped failed:', err)
+        res.status(500).json({ message: err.message || 'Relationship mapping failed' })
     }
 })
 

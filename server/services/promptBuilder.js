@@ -3,12 +3,12 @@
  */
 
 function buildScreenplayPrompt(title, genre, tone, premise, length) {
-    const sceneCount = length === 'feature' ? '40-60' : '10-15'
-    return {
-        system: `You are an expert Hollywood screenwriter. Write professional screenplays in proper Final Draft format.
+  const sceneCount = length === 'feature' ? '40-60' : '10-15'
+  return {
+    system: `You are an expert Hollywood screenwriter. Write professional screenplays in proper Final Draft format.
 Always return VALID JSON only — no markdown, no code blocks, just raw JSON.
 Use proper 3-act structure: Setup (Act 1), Confrontation (Act 2), Resolution (Act 3).`,
-        user: `Write a complete ${genre.toLowerCase()} screenplay titled "${title}".
+    user: `Write a complete ${genre.toLowerCase()} screenplay titled "${title}".
 Tone: ${tone}
 Premise: ${premise}
 Length: approximately ${sceneCount} scenes total across 3 acts.
@@ -34,19 +34,19 @@ Return ONLY this JSON structure (no other text):
 }
 
 Write compelling, cinematic content. Make dialogue feel authentic. Include at least 3 named characters.`,
-    }
+  }
 }
 
 function buildCharacterPrompt(title, genre, tone, premise, characterNames, dialogueByChar) {
-    const charList = characterNames.map(name => {
-        const lines = (dialogueByChar[name] || []).slice(0, 5).join(' | ')
-        return `${name}: "${lines}"`
-    }).join('\n')
+  const charList = characterNames.map(name => {
+    const lines = (dialogueByChar[name] || []).slice(0, 5).join(' | ')
+    return `${name}: "${lines}"`
+  }).join('\n')
 
-    return {
-        system: `You are a professional script consultant specializing in deep character development.
+  return {
+    system: `You are a professional script consultant specializing in deep character development.
 Always return VALID JSON only — no markdown, no preamble.`,
-        user: `For the ${genre} film "${title}" (${tone} tone):
+    user: `For the ${genre} film "${title}" (${tone} tone):
 Premise: ${premise}
 
 Create detailed character profiles for these characters:
@@ -65,18 +65,18 @@ Return ONLY a JSON array:
     "relationship_to_protagonist": "How they relate to the main character"
   }
 ]`,
-    }
+  }
 }
 
 function buildSoundPrompt(scenes) {
-    const sceneList = scenes.slice(0, 30).map(s =>
-        `Scene ${s.sceneNumber}: ${s.slugline} — ${s.action?.slice(0, 100)}`
-    ).join('\n')
+  const sceneList = scenes.slice(0, 30).map(s =>
+    `Scene ${s.sceneNumber}: ${s.slugline} — ${s.action?.slice(0, 100)}`
+  ).join('\n')
 
-    return {
-        system: `You are a professional sound designer and music supervisor for film.
+  return {
+    system: `You are a professional sound designer and music supervisor for film.
 Always return VALID JSON only.`,
-        user: `Create a detailed sound design plan for these scenes:
+    user: `Create a detailed sound design plan for these scenes:
 
 ${sceneList}
 
@@ -91,21 +91,21 @@ Return ONLY a JSON array (one object per scene):
     "notes": "Director guidance note for the sound designer"
   }
 ]`,
-    }
+  }
 }
 
 function buildSchedulePrompt(scenes) {
-    const locationGroups = {}
-    scenes.forEach(s => {
-        const loc = s.slugline?.split(' — ')[0]?.replace(/^(INT\.|EXT\.)/, '').trim() || 'UNKNOWN'
-        if (!locationGroups[loc]) locationGroups[loc] = []
-        locationGroups[loc].push(s.sceneNumber)
-    })
+  const locationGroups = {}
+  scenes.forEach(s => {
+    const loc = s.slugline?.split(' — ')[0]?.replace(/^(INT\.|EXT\.)/, '').trim() || 'UNKNOWN'
+    if (!locationGroups[loc]) locationGroups[loc] = []
+    locationGroups[loc].push(s.sceneNumber)
+  })
 
-    return {
-        system: `You are an experienced film production manager with expertise in scheduling.
+  return {
+    system: `You are an experienced film production manager with expertise in scheduling.
 Always return VALID JSON only.`,
-        user: `Create a realistic production schedule for a film with ${scenes.length} scenes.
+    user: `Create a realistic production schedule for a film with ${scenes.length} scenes.
 
 Location groups (scenes): ${JSON.stringify(locationGroups)}
 
@@ -142,14 +142,14 @@ Return ONLY this JSON:
     }
   ]
 }`,
-    }
+  }
 }
 
 function buildRegeneratePrompt(targetType, currentContent, surroundingContext, refinementNote) {
-    return {
-        system: `You are an expert Hollywood screenwriter. Rewrite only the requested section.
+  return {
+    system: `You are an expert Hollywood screenwriter. Rewrite only the requested section.
 Keep it consistent with surrounding context. Always return VALID JSON only.`,
-        user: `Rewrite this ${targetType}. Keep it consistent with context provided.
+    user: `Rewrite this ${targetType}. Keep it consistent with context provided.
 ${refinementNote ? `\nSpecific instruction: ${refinementNote}` : ''}
 
 Current content:
@@ -159,13 +159,49 @@ Surrounding context:
 ${JSON.stringify(surroundingContext, null, 2)}
 
 Return the rewritten ${targetType} as a JSON object matching the same structure as the current content.`,
-    }
+  }
+}
+
+function buildDialoguePrompt(character1, character2, context, projectTone, projectGenre) {
+  return {
+    system: `You are an expert Hollywood screenwriter specializing in authentic, punchy dialogue. Always return VALID JSON only.`,
+    user: `Write a short dialogue exchange between two characters for a ${projectGenre} film (${projectTone} tone).
+Characters: ${character1} and ${character2}.
+Scene Context/Prompt: ${context}
+
+The dialogue should be a back-and-forth exchange (approx 4-8 lines).
+
+Return ONLY this JSON structure (no other text or markdown):
+[
+  { "character": "CHARACTER NAME", "line": "Spoken line of dialogue.", "parenthetical": "optional action/feeling" }
+]`,
+  }
+}
+
+function buildRelationshipPrompt(characters, projectTitle, projectGenre) {
+  const charNames = characters.map(c => c.name).join(', ')
+  return {
+    system: `You are a Hollywood script analyst. Analyze character relationships. Always return VALID JSON only.`,
+    user: `For the ${projectGenre} film "${projectTitle}", analyze the dynamic between these characters: ${charNames}.
+
+Return ONLY this structured JSON array containing significant relational edges:
+[
+  {
+    "source": "Character A",
+    "target": "Character B",
+    "type": "Friends|Enemies|Lovers|Family|Rivals|Mentor",
+    "description": "Short description of dynamic"
+  }
+]`,
+  }
 }
 
 module.exports = {
-    buildScreenplayPrompt,
-    buildCharacterPrompt,
-    buildSoundPrompt,
-    buildSchedulePrompt,
-    buildRegeneratePrompt,
+  buildScreenplayPrompt,
+  buildCharacterPrompt,
+  buildSoundPrompt,
+  buildSchedulePrompt,
+  buildRegeneratePrompt,
+  buildDialoguePrompt,
+  buildRelationshipPrompt,
 }

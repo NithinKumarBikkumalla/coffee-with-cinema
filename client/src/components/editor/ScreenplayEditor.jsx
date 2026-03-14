@@ -105,6 +105,7 @@ export default function ScreenplayEditor({ project, setProject }) {
                                                 <SceneBlock
                                                     scene={scene}
                                                     projectId={project.id}
+                                                    characters={project.characters?.map(c => c.name) || []}
                                                     dragHandleProps={drag.dragHandleProps}
                                                     onChange={handleSceneChange}
                                                     onRegenerated={(updated) => {

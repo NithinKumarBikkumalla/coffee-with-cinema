@@ -32,6 +32,8 @@ model Project {
   sound       SoundDesign[]
   schedule    ProductionSchedule?
   versions    ProjectVersion[]
+  roles        Json?
+  relationshipMap Json @default("[]")
   exports     ExportLog[]
 }
 

@@ -3,6 +3,7 @@ import { Loader2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import apiClient from '../../api/client'
 import toast from 'react-hot-toast'
 import RegenerateModal from '../modals/RegenerateModal'
+import CharacterRelationshipMap from './CharacterRelationshipMap'
 
 const ROLE_COLORS = {
     protagonist: 'bg-gold-500/20 text-gold-400 border-gold-500/30',
@@ -177,6 +178,9 @@ export default function CharacterList({ project, setProject }) {
                     ))}
                 </div>
             )}
+
+            {/* Relationship Map section */}
+            <CharacterRelationshipMap project={project} setProject={setProject} />
         </div>
     )
 }

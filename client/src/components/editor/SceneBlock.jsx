@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
-import { GripVertical, RefreshCw, Trash2 } from 'lucide-react'
+import { GripVertical, RefreshCw, Trash2, MessageSquarePlus } from 'lucide-react'
 import RegenerateModal from '../modals/RegenerateModal'
+import GenerateDialogueModal from '../modals/GenerateDialogueModal'
 
-export default function SceneBlock({ scene, projectId, dragHandleProps, onChange, onRegenerated }) {
+export default function SceneBlock({ scene, projectId, characters, dragHandleProps, onChange, onRegenerated }) {
     const [hovered, setHovered] = useState(false)
     const [showRegen, setShowRegen] = useState(false)
+    const [showDialogue, setShowDialogue] = useState(false)
     const [fadeIn, setFadeIn] = useState(false)
 
     const dialogues = Array.isArray(scene.dialogue) ? scene.dialogue : []
@@ -12,6 +14,13 @@ export default function SceneBlock({ scene, projectId, dragHandleProps, onChange
     const handleRegenerated = (updated) => {
         setFadeIn(true)
         onRegenerated(updated)
+        setTimeout(() => setFadeIn(false), 600)
+    }
+
+    const handleDialogueGenerated = (newDialogueArray) => {
+        setFadeIn(true)
+        const updatedDialogue = [...dialogues, ...newDialogueArray]
+        onChange(scene.id, 'dialogue', updatedDialogue)
         setTimeout(() => setFadeIn(false), 600)
     }
 
@@ -32,6 +41,12 @@ export default function SceneBlock({ scene, projectId, dragHandleProps, onChange
 
                 {/* Toolbar */}
                 <div className={`absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
+                    <button
+                        onClick={() => setShowDialogue(true)}
+                        className="flex items-center gap-1 text-xs text-white/40 hover:text-teal-400 bg-white/5 hover:bg-teal-500/10 border border-white/10 hover:border-teal-500/30 px-2 py-1 rounded-lg transition-all duration-200"
+                    >
+                        <MessageSquarePlus className="w-3 h-3" /> Gen Dialogue
+                    </button>
                     <button
                         onClick={() => setShowRegen(true)}
                         className="flex items-center gap-1 text-xs text-white/40 hover:text-gold-400 bg-white/5 hover:bg-gold-500/10 border border-white/10 hover:border-gold-500/30 px-2 py-1 rounded-lg transition-all duration-200"
@@ -97,6 +112,16 @@ export default function SceneBlock({ scene, projectId, dragHandleProps, onChange
                     targetId={scene.id}
                     onClose={() => setShowRegen(false)}
                     onRegenerated={handleRegenerated}
+                />
+            )}
+
+            {showDialogue && (
+                <GenerateDialogueModal
+                    projectId={projectId}
+                    sceneId={scene.id}
+                    charactersList={characters}
+                    onClose={() => setShowDialogue(false)}
+                    onGenerated={handleDialogueGenerated}
                 />
             )}
         </>
