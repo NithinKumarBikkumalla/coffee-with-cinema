@@ -6,7 +6,7 @@ const { pipeSSE } = require('../services/streamService')
 const {
     buildScreenplayPrompt, buildCharacterPrompt,
     buildSoundPrompt, buildSchedulePrompt, buildRegeneratePrompt,
-    buildDialoguePrompt, buildRelationshipPrompt,
+    buildDialoguePrompt, buildRelationshipPrompt, buildShotListPrompt,
 } = require('../services/promptBuilder')
 
 // POST /api/generate/screenplay — SSE streaming
@@ -199,6 +199,37 @@ router.post('/relationships', async (req, res) => {
     } catch (err) {
         console.error('Relationship mapped failed:', err)
         res.status(500).json({ message: err.message || 'Relationship mapping failed' })
+    }
+})
+
+// POST /api/generate/shot-list — JSON
+router.post('/shot-list', async (req, res) => {
+    try {
+        const { projectId } = req.body
+        const project = await prisma.project.findUnique({
+            where: { id: projectId }, include: { scenes: { orderBy: { order: 'asc' } } },
+        })
+        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!project.scenes.length) return res.status(400).json({ message: 'Generate a screenplay first to create a shot list.' })
+
+        const prompt = buildShotListPrompt(project.scenes, project.title, project.genre)
+        let shotData = await generateJSON(prompt)
+
+        if (!Array.isArray(shotData)) {
+            if (shotData && Array.isArray(shotData.shot_list)) shotData = shotData.shot_list
+            else if (shotData && Array.isArray(shotData.scenes)) shotData = shotData.scenes
+            else shotData = []
+        }
+
+        const updated = await prisma.project.update({
+            where: { id: projectId },
+            data: { shotList: shotData },
+        })
+
+        res.json(updated.shotList)
+    } catch (err) {
+        console.error('Shot list generation error:', err)
+        res.status(500).json({ message: err.message || 'Shot list generation failed' })
     }
 })
 

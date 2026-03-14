@@ -196,6 +196,37 @@ Return ONLY this structured JSON array containing significant relational edges:
   }
 }
 
+function buildShotListPrompt(scenes, projectTitle, projectGenre) {
+  return {
+    system: `You are an experienced Film Director and Director of Photography (DP). Generate professional shot lists. Always return VALID JSON only.`,
+    user: `Create a detailed shot list for the ${projectGenre} film "${projectTitle}".
+
+Scenes:
+${scenes.slice(0, 30).map(s => `Scene ${s.sceneNumber}: ${s.slugline} — ${s.action?.slice(0, 120)}`).join('\n')}
+
+Return ONLY a JSON array where EACH scene has an object with shots:
+[
+  {
+    "scene_number": 1,
+    "slugline": "INT. LOCATION - DAY",
+    "shots": [
+      {
+        "shot_number": 1,
+        "shot_type": "Wide Shot",
+        "camera_angle": "Eye Level",
+        "movement": "Static",
+        "lens": "24mm",
+        "description": "Brief description of what the camera sees"
+      }
+    ]
+  }
+]
+
+Use professional shot types: Extreme Wide Shot, Wide Shot, Medium Shot, Close-Up, Extreme Close-Up, Two Shot, Over-the-Shoulder, Point of View.
+Use professional movements: Static, Pan, Tilt, Dolly In, Dolly Out, Tracking, Handheld, Crane Up/Down.`,
+  }
+}
+
 module.exports = {
   buildScreenplayPrompt,
   buildCharacterPrompt,
@@ -204,4 +235,5 @@ module.exports = {
   buildRegeneratePrompt,
   buildDialoguePrompt,
   buildRelationshipPrompt,
+  buildShotListPrompt,
 }

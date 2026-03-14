@@ -10,12 +10,14 @@ import ExportButton from '../components/export/ExportButton'
 import VersionHistoryModal from '../components/modals/VersionHistoryModal'
 import HelpModal from '../components/modals/HelpModal'
 import ContactModal from '../components/modals/ContactModal'
+import ShotListPanel from '../components/shots/ShotListPanel'
 
 const TABS = [
     { id: 'storyline', label: '📖 Story Line' },
     { id: 'screenplay', label: '📜 Screenplay' },
     { id: 'characters', label: '🎭 Characters' },
     { id: 'sound', label: '🎵 Sound Design' },
+    { id: 'shots', label: '🎥 Shot List' },
 ]
 
 export default function ProjectView() {
@@ -152,6 +154,9 @@ export default function ProjectView() {
                 )}
                 {activeTab === 'sound' && (
                     <SoundDesignPanel project={project} setProject={setProject} />
+                )}
+                {activeTab === 'shots' && (
+                    <ShotListPanel project={project} setProject={setProject} />
                 )}
             </main>
 
