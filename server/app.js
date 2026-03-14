@@ -29,6 +29,7 @@ app.use('/api/sound', authenticate, require('./routes/sound'))
 app.use('/api/schedule', authenticate, require('./routes/schedule'))
 app.use('/api/generate', authenticate, rateLimiter, generateRoutes)
 app.use('/api/export', authenticate, exportRoutes)
+app.use('/api/collaborators', authenticate, require('./routes/collaborators'))
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }))

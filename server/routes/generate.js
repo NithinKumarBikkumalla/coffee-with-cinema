@@ -9,6 +9,19 @@ const {
     buildDialoguePrompt, buildRelationshipPrompt, buildShotListPrompt, buildEndingsPrompt,
 } = require('../services/promptBuilder')
 
+// Helper: returns true only if user is owner OR an accepted editor collaborator
+async function canGenerate(projectId, userId) {
+    const project = await prisma.project.findUnique({ where: { id: projectId } })
+    if (!project) return false
+    if (project.userId === userId) return true
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) return false
+    const collab = await prisma.collaborator.findFirst({
+        where: { projectId, email: user.email, status: 'accepted', role: 'editor' }
+    })
+    return !!collab
+}
+
 // POST /api/generate/screenplay — SSE streaming
 router.post('/screenplay', async (req, res) => {
     try {
@@ -27,10 +40,10 @@ router.post('/screenplay', async (req, res) => {
 router.post('/characters', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId }, include: { scenes: true },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
 
         // Extract character names + dialogue from scenes
         const dialogueByChar = {}
@@ -67,10 +80,10 @@ router.post('/characters', async (req, res) => {
 router.post('/sound', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId }, include: { scenes: { orderBy: { order: 'asc' } } },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
         if (!project.scenes.length) return res.status(400).json({ message: 'No scenes found' })
 
         const prompt = buildSoundPrompt(project.scenes)
@@ -99,10 +112,10 @@ router.post('/sound', async (req, res) => {
 router.post('/schedule', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId }, include: { scenes: { orderBy: { order: 'asc' } } },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
         if (!project.scenes.length) return res.status(400).json({ message: 'No scenes found' })
 
         const prompt = buildSchedulePrompt(project.scenes)
@@ -124,8 +137,8 @@ router.post('/schedule', async (req, res) => {
 router.post('/regenerate', async (req, res) => {
     try {
         const { projectId, targetType, targetId, refinementNote } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({ where: { id: projectId } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
 
         let currentContent = null
         let surroundingContext = {}
@@ -156,8 +169,8 @@ router.post('/regenerate', async (req, res) => {
 router.post('/dialogue', async (req, res) => {
     try {
         const { projectId, character1, character2, contextPrompt } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({ where: { id: projectId } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
 
         const prompt = buildDialoguePrompt(character1, character2, contextPrompt, project.tone, project.genre)
         const dialogueData = await generateJSON(prompt)
@@ -173,10 +186,10 @@ router.post('/dialogue', async (req, res) => {
 router.post('/relationships', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId }, include: { characters: true },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
         if (!project.characters || project.characters.length < 2) {
             return res.status(400).json({ message: 'Need at least 2 characters to map relationships.' })
         }
@@ -206,10 +219,10 @@ router.post('/relationships', async (req, res) => {
 router.post('/shot-list', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId }, include: { scenes: { orderBy: { order: 'asc' } } },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
         if (!project.scenes.length) return res.status(400).json({ message: 'Generate a screenplay first to create a shot list.' })
 
         const prompt = buildShotListPrompt(project.scenes, project.title, project.genre)
@@ -237,11 +250,11 @@ router.post('/shot-list', async (req, res) => {
 router.post('/endings', async (req, res) => {
     try {
         const { projectId } = req.body
+        if (!await canGenerate(projectId, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const project = await prisma.project.findUnique({
             where: { id: projectId },
             include: { scenes: { orderBy: { order: 'desc' }, take: 3 } },
         })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
         if (!project.scenes.length) return res.status(400).json({ message: 'Generate a screenplay first.' })
 
         const lastSceneAction = project.scenes[0]?.action || project.premise

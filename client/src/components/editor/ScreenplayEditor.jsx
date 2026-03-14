@@ -5,7 +5,7 @@ import apiClient from '../../api/client'
 import toast from 'react-hot-toast'
 import SceneBlock from './SceneBlock'
 
-export default function ScreenplayEditor({ project, setProject }) {
+export default function ScreenplayEditor({ project, setProject, isReadOnly }) {
     const [saving, setSaving] = useState(false)
     const debounceRef = useRef({})
 
@@ -26,6 +26,7 @@ export default function ScreenplayEditor({ project, setProject }) {
     }, [project?.id])
 
     const handleSceneChange = (sceneId, field, value) => {
+        if (isReadOnly) return
         setProject(prev => ({
             ...prev,
             scenes: prev.scenes.map(s => s.id === sceneId ? { ...s, [field]: value } : s)
@@ -34,7 +35,7 @@ export default function ScreenplayEditor({ project, setProject }) {
     }
 
     const handleDragEnd = async (result) => {
-        if (!result.destination) return
+        if (isReadOnly || !result.destination) return
         const reordered = Array.from(scenes)
         const [moved] = reordered.splice(result.source.index, 1)
         reordered.splice(result.destination.index, 0, moved)
@@ -49,6 +50,7 @@ export default function ScreenplayEditor({ project, setProject }) {
     }
 
     const addScene = async () => {
+        if (isReadOnly) return
         try {
             const { data } = await apiClient.post(`/api/projects/${project.id}/scenes`, {
                 actNumber: 1, sceneNumber: scenes.length + 1,
@@ -79,9 +81,11 @@ export default function ScreenplayEditor({ project, setProject }) {
                             <Loader2 className="w-3 h-3 animate-spin" /> Saving…
                         </div>
                     )}
-                    <button onClick={addScene} className="btn-secondary flex items-center gap-2 text-sm">
-                        <Plus className="w-4 h-4" /> Add Scene
-                    </button>
+                    {!isReadOnly && (
+                        <button onClick={addScene} className="btn-secondary flex items-center gap-2 text-sm">
+                            <Plus className="w-4 h-4" /> Add Scene
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -103,12 +107,14 @@ export default function ScreenplayEditor({ project, setProject }) {
                                                 className={`transition-all duration-200 ${snapshot.isDragging ? 'opacity-80 scale-[1.01]' : ''}`}
                                             >
                                                 <SceneBlock
+                                                    isReadOnly={isReadOnly}
                                                     scene={scene}
                                                     projectId={project.id}
                                                     characters={project.characters?.map(c => c.name) || []}
-                                                    dragHandleProps={drag.dragHandleProps}
+                                                    dragHandleProps={isReadOnly ? null : drag.dragHandleProps}
                                                     onChange={handleSceneChange}
                                                     onRegenerated={(updated) => {
+                                                        if (isReadOnly) return
                                                         setProject(prev => ({
                                                             ...prev,
                                                             scenes: prev.scenes.map(s => s.id === updated.id ? updated : s)

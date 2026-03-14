@@ -69,7 +69,7 @@ function SceneShotBlock({ sceneData }) {
     )
 }
 
-export default function ShotListPanel({ project, setProject }) {
+export default function ShotListPanel({ project, setProject, isReadOnly }) {
     const [generating, setGenerating] = useState(false)
 
     let shotList = []
@@ -105,10 +105,12 @@ export default function ShotListPanel({ project, setProject }) {
                 <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">
                     Automatically generates a professional Director/DP-ready shot list from your screenplay, scene by scene, with shot type, camera angle, movement, and lens recommendations.
                 </p>
-                <button onClick={handleGenerate} disabled={generating || !project?.scenes?.length} className="btn-primary flex items-center gap-2 mx-auto">
-                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                    {!project?.scenes?.length ? 'Generate Screenplay First' : 'Generate Shot List'}
-                </button>
+                {!isReadOnly && (
+                    <button onClick={handleGenerate} disabled={generating || !project?.scenes?.length} className="btn-primary flex items-center gap-2 mx-auto">
+                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                        {!project?.scenes?.length ? 'Generate Screenplay First' : 'Generate Shot List'}
+                    </button>
+                )}
             </div>
         )
     }
@@ -128,14 +130,16 @@ export default function ShotListPanel({ project, setProject }) {
                         {shotList.length} scenes · {totalShots} total shots
                     </p>
                 </div>
-                <button
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="btn-secondary flex items-center gap-2 text-sm"
-                >
-                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Regenerate
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="btn-secondary flex items-center gap-2 text-sm"
+                    >
+                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        Regenerate
+                    </button>
+                )}
             </div>
 
             {/* Shot List */}

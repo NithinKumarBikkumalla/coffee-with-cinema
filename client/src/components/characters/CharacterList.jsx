@@ -11,7 +11,7 @@ const ROLE_COLORS = {
     supporting: 'bg-teal-400/20 text-teal-400 border-teal-400/30',
 }
 
-function CharacterCard({ character, onUpdated }) {
+function CharacterCard({ character, onUpdated, isReadOnly }) {
     const [expanded, setExpanded] = useState(false)
     const [showRegen, setShowRegen] = useState(false)
     const debounceRef = useRef({})
@@ -42,12 +42,14 @@ function CharacterCard({ character, onUpdated }) {
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setShowRegen(true)}
-                            className="p-2 text-white/30 hover:text-gold-400 hover:bg-gold-500/10 rounded-lg transition-all duration-200"
-                        >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
+                        {!isReadOnly && (
+                            <button
+                                onClick={() => setShowRegen(true)}
+                                className="p-2 text-white/30 hover:text-gold-400 hover:bg-gold-500/10 rounded-lg transition-all duration-200"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                         <button
                             onClick={() => setExpanded(p => !p)}
                             className="p-2 text-white/30 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
@@ -77,15 +79,17 @@ function CharacterCard({ character, onUpdated }) {
                                     <textarea
                                         defaultValue={profile[key] || ''}
                                         onChange={e => debouncedSave(key, e.target.value)}
+                                        readOnly={isReadOnly}
                                         rows={3}
-                                        className="input-field text-sm resize-none"
+                                        className={`input-field text-sm resize-none ${isReadOnly ? 'cursor-default opacity-80' : ''}`}
                                     />
                                 ) : (
                                     <input
                                         type="text"
                                         defaultValue={profile[key] || ''}
                                         onChange={e => debouncedSave(key, e.target.value)}
-                                        className="input-field text-sm"
+                                        readOnly={isReadOnly}
+                                        className={`input-field text-sm ${isReadOnly ? 'cursor-default opacity-80' : ''}`}
                                     />
                                 )}
                             </div>
@@ -119,7 +123,7 @@ function CharacterCard({ character, onUpdated }) {
     )
 }
 
-export default function CharacterList({ project, setProject }) {
+export default function CharacterList({ project, setProject, isReadOnly }) {
     const [generating, setGenerating] = useState(false)
 
     const characters = project?.characters || []
@@ -151,14 +155,16 @@ export default function CharacterList({ project, setProject }) {
                     <h2 className="text-xl font-bold">Character Profiles</h2>
                     <p className="text-white/40 text-sm">{characters.length} characters generated</p>
                 </div>
-                <button
-                    id="generate-characters-btn"
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="btn-primary flex items-center gap-2 text-sm"
-                >
-                    {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : '✨ Generate Characters'}
-                </button>
+                {!isReadOnly && (
+                    <button
+                        id="generate-characters-btn"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="btn-primary flex items-center gap-2 text-sm"
+                    >
+                        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : '✨ Generate Characters'}
+                    </button>
+                )}
             </div>
 
             {characters.length === 0 ? (
@@ -166,21 +172,23 @@ export default function CharacterList({ project, setProject }) {
                     <div className="text-4xl mb-4">🎭</div>
                     <h3 className="font-bold mb-2">No characters yet</h3>
                     <p className="text-white/40 text-sm mb-6">Generate character profiles from your screenplay</p>
-                    <button onClick={handleGenerate} disabled={generating} className="btn-primary flex items-center gap-2 mx-auto">
-                        {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Generate Character Profiles
-                    </button>
+                    {!isReadOnly && (
+                        <button onClick={handleGenerate} disabled={generating} className="btn-primary flex items-center gap-2 mx-auto">
+                            {generating && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Generate Character Profiles
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {characters.map(c => (
-                        <CharacterCard key={c.id} character={c} onUpdated={handleUpdated} />
+                        <CharacterCard key={c.id} character={c} onUpdated={handleUpdated} isReadOnly={isReadOnly} />
                     ))}
                 </div>
             )}
 
             {/* Relationship Map section */}
-            <CharacterRelationshipMap project={project} setProject={setProject} />
+            <CharacterRelationshipMap project={project} setProject={setProject} isReadOnly={isReadOnly} />
         </div>
     )
 }

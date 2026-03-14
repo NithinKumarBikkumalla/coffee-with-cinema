@@ -3,7 +3,7 @@ import { Loader2, Volume2 } from 'lucide-react'
 import apiClient from '../../api/client'
 import toast from 'react-hot-toast'
 
-function SceneSoundCard({ sound, onUpdate }) {
+function SceneSoundCard({ sound, onUpdate, isReadOnly }) {
     const debounceRef = useRef({})
 
     const debounceSave = (field, value) => {
@@ -37,9 +37,14 @@ function SceneSoundCard({ sound, onUpdate }) {
                         <input
                             type="text"
                             defaultValue={sound[key] || ''}
-                            onChange={e => { onUpdate(sound.id, key, e.target.value); debounceSave(key, e.target.value) }}
+                            onChange={e => {
+                                if (isReadOnly) return
+                                onUpdate(sound.id, key, e.target.value)
+                                debounceSave(key, e.target.value)
+                            }}
+                            readOnly={isReadOnly}
                             placeholder={placeholder}
-                            className="input-field text-sm py-2"
+                            className={`input-field text-sm py-2 ${isReadOnly ? 'cursor-default opacity-80' : ''}`}
                         />
                     </div>
                 ))}
@@ -58,7 +63,7 @@ function SceneSoundCard({ sound, onUpdate }) {
     )
 }
 
-export default function SoundDesignPanel({ project, setProject }) {
+export default function SoundDesignPanel({ project, setProject, isReadOnly }) {
     const [generating, setGenerating] = useState(false)
     const sounds = project?.sound || []
 
@@ -89,14 +94,16 @@ export default function SoundDesignPanel({ project, setProject }) {
                     <h2 className="text-xl font-bold">Sound Design Plan</h2>
                     <p className="text-white/40 text-sm">{sounds.length} scenes with audio notes</p>
                 </div>
-                <button
-                    id="generate-sound-btn"
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="btn-primary flex items-center gap-2 text-sm"
-                >
-                    {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : '🎵 Generate Sound Design'}
-                </button>
+                {!isReadOnly && (
+                    <button
+                        id="generate-sound-btn"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="btn-primary flex items-center gap-2 text-sm"
+                    >
+                        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : '🎵 Generate Sound Design'}
+                    </button>
+                )}
             </div>
 
             {sounds.length === 0 ? (
@@ -104,15 +111,17 @@ export default function SoundDesignPanel({ project, setProject }) {
                     <div className="text-4xl mb-4">🎵</div>
                     <h3 className="font-bold mb-2">No sound design yet</h3>
                     <p className="text-white/40 text-sm mb-6">Generate a scene-by-scene audio plan for your screenplay</p>
-                    <button onClick={handleGenerate} disabled={generating} className="btn-primary flex items-center gap-2 mx-auto">
-                        {generating && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Generate Sound Design
-                    </button>
+                    {!isReadOnly && (
+                        <button onClick={handleGenerate} disabled={generating} className="btn-primary flex items-center gap-2 mx-auto">
+                            {generating && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Generate Sound Design
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {sounds.map(s => (
-                        <SceneSoundCard key={s.id} sound={s} onUpdate={handleUpdate} />
+                        <SceneSoundCard key={s.id} sound={s} onUpdate={handleUpdate} isReadOnly={isReadOnly} />
                     ))}
                 </div>
             )}

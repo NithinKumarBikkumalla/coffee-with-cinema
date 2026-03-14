@@ -76,16 +76,27 @@ router.get('/:id', async (req, res) => {
             include: { scenes: { orderBy: { order: 'asc' } }, characters: true, sound: { orderBy: { sceneNumber: 'asc' } }, schedule: true },
         })
         if (!project) return res.status(404).json({ message: 'Project not found' })
-        if (project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
-        res.json(project)
+
+        // Allow access to the owner OR an accepted collaborator
+        const isOwner = project.userId === req.user.id
+        let collaboratorRole = null
+        if (!isOwner) {
+            const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+            const collab = user ? await prisma.collaborator.findFirst({
+                where: { projectId: project.id, email: user.email, status: 'accepted' }
+            }) : null
+            if (!collab) return res.status(403).json({ message: 'Project not found or access denied' })
+            collaboratorRole = collab.role // 'viewer' | 'editor'
+        }
+
+        res.json({ ...project, collaboratorRole })
     } catch (err) { res.status(500).json({ message: 'Failed to load project' }) }
 })
 
 // PATCH /api/projects/:id
 router.patch('/:id', async (req, res) => {
     try {
-        const project = await prisma.project.findUnique({ where: { id: req.params.id } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!await canEdit(req.params.id, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         await writeVersion(req.params.id, 'Auto-saved')
         const updated = await prisma.project.update({
             where: { id: req.params.id },
@@ -109,7 +120,17 @@ router.delete('/:id', async (req, res) => {
 router.get('/:id/versions', async (req, res) => {
     try {
         const project = await prisma.project.findUnique({ where: { id: req.params.id } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!project) return res.status(404).json({ message: 'Project not found' })
+
+        // Accessible if owner or collaborator
+        if (project.userId !== req.user.id) {
+            const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+            const collab = await prisma.collaborator.findFirst({
+                where: { projectId: req.params.id, email: user.email, status: 'accepted' }
+            })
+            if (!collab) return res.status(403).json({ message: 'Access denied' })
+        }
+
         const versions = await prisma.projectVersion.findMany({
             where: { projectId: req.params.id }, orderBy: { versionNumber: 'desc' },
             select: { id: true, versionNumber: true, changeNote: true, savedAt: true },
@@ -121,8 +142,7 @@ router.get('/:id/versions', async (req, res) => {
 // POST /api/projects/:id/restore
 router.post('/:id/restore', async (req, res) => {
     try {
-        const project = await prisma.project.findUnique({ where: { id: req.params.id } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!await canEdit(req.params.id, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const version = await prisma.projectVersion.findFirst({
             where: { projectId: req.params.id, versionNumber: req.body.versionNumber },
         })
@@ -146,6 +166,7 @@ router.post('/:id/restore', async (req, res) => {
 // PATCH /api/projects/:id/scenes/reorder
 router.patch('/:id/scenes/reorder', async (req, res) => {
     try {
+        if (!await canEdit(req.params.id, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const { orderedSceneIds } = req.body
         await Promise.all(orderedSceneIds.map((sceneId, index) =>
             prisma.scene.update({ where: { id: sceneId }, data: { order: index } })
@@ -154,9 +175,23 @@ router.patch('/:id/scenes/reorder', async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Reorder failed' }) }
 })
 
+// Helper: check if user has edit access (owner or accepted editor)
+async function canEdit(projectId, userId) {
+    const project = await prisma.project.findUnique({ where: { id: projectId } })
+    if (!project) return false
+    if (project.userId === userId) return true
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) return false
+    const collab = await prisma.collaborator.findFirst({
+        where: { projectId, email: user.email, status: 'accepted', role: 'editor' }
+    })
+    return !!collab
+}
+
 // PATCH /api/projects/:id/scenes/:sceneId
 router.patch('/:id/scenes/:sceneId', async (req, res) => {
     try {
+        if (!await canEdit(req.params.id, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const { field, value } = req.body
         const allowedFields = ['slugline', 'action', 'dialogue']
         if (!allowedFields.includes(field)) return res.status(400).json({ message: 'Invalid field' })
@@ -170,8 +205,7 @@ router.patch('/:id/scenes/:sceneId', async (req, res) => {
 // POST /api/projects/:id/scenes — add blank scene
 router.post('/:id/scenes', async (req, res) => {
     try {
-        const project = await prisma.project.findUnique({ where: { id: req.params.id } })
-        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!await canEdit(req.params.id, req.user.id)) return res.status(403).json({ message: 'Access denied' })
         const count = await prisma.scene.count({ where: { projectId: req.params.id } })
         const scene = await prisma.scene.create({
             data: { projectId: req.params.id, ...req.body, order: count },

@@ -3,7 +3,7 @@ import { GripVertical, RefreshCw, Trash2, MessageSquarePlus } from 'lucide-react
 import RegenerateModal from '../modals/RegenerateModal'
 import GenerateDialogueModal from '../modals/GenerateDialogueModal'
 
-export default function SceneBlock({ scene, projectId, characters, dragHandleProps, onChange, onRegenerated }) {
+export default function SceneBlock({ isReadOnly, scene, projectId, characters, dragHandleProps, onChange, onRegenerated }) {
     const [hovered, setHovered] = useState(false)
     const [showRegen, setShowRegen] = useState(false)
     const [showDialogue, setShowDialogue] = useState(false)
@@ -40,20 +40,22 @@ export default function SceneBlock({ scene, projectId, characters, dragHandlePro
                 </div>
 
                 {/* Toolbar */}
-                <div className={`absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
-                    <button
-                        onClick={() => setShowDialogue(true)}
-                        className="flex items-center gap-1 text-xs text-white/40 hover:text-teal-400 bg-white/5 hover:bg-teal-500/10 border border-white/10 hover:border-teal-500/30 px-2 py-1 rounded-lg transition-all duration-200"
-                    >
-                        <MessageSquarePlus className="w-3 h-3" /> Gen Dialogue
-                    </button>
-                    <button
-                        onClick={() => setShowRegen(true)}
-                        className="flex items-center gap-1 text-xs text-white/40 hover:text-gold-400 bg-white/5 hover:bg-gold-500/10 border border-white/10 hover:border-gold-500/30 px-2 py-1 rounded-lg transition-all duration-200"
-                    >
-                        <RefreshCw className="w-3 h-3" /> Regenerate
-                    </button>
-                </div>
+                {!isReadOnly && (
+                    <div className={`absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
+                        <button
+                            onClick={() => setShowDialogue(true)}
+                            className="flex items-center gap-1 text-xs text-white/40 hover:text-teal-400 bg-white/5 hover:bg-teal-500/10 border border-white/10 hover:border-teal-500/30 px-2 py-1 rounded-lg transition-all duration-200"
+                        >
+                            <MessageSquarePlus className="w-3 h-3" /> Gen Dialogue
+                        </button>
+                        <button
+                            onClick={() => setShowRegen(true)}
+                            className="flex items-center gap-1 text-xs text-white/40 hover:text-gold-400 bg-white/5 hover:bg-gold-500/10 border border-white/10 hover:border-gold-500/30 px-2 py-1 rounded-lg transition-all duration-200"
+                        >
+                            <RefreshCw className="w-3 h-3" /> Regenerate
+                        </button>
+                    </div>
+                )}
 
                 {/* Scene number badge */}
                 <div className="flex items-center gap-3 mb-4">
@@ -65,22 +67,20 @@ export default function SceneBlock({ scene, projectId, characters, dragHandlePro
 
                 {/* Slugline */}
                 <div
-                    contentEditable
+                    contentEditable={!isReadOnly}
                     suppressContentEditableWarning
                     onBlur={e => onChange(scene.id, 'slugline', e.currentTarget.textContent)}
-                    className="screenplay-block text-sm font-bold tracking-widest text-white uppercase mb-3 outline-none 
-                     focus:bg-white/5 rounded px-1 -mx-1 transition-colors min-h-[1.5em]"
+                    className={`screenplay-block text-sm font-bold tracking-widest text-white uppercase mb-3 outline-none rounded px-1 -mx-1 transition-colors min-h-[1.5em] ${!isReadOnly ? 'focus:bg-white/5' : ''}`}
                 >
                     {scene.slugline}
                 </div>
 
                 {/* Action */}
                 <div
-                    contentEditable
+                    contentEditable={!isReadOnly}
                     suppressContentEditableWarning
                     onBlur={e => onChange(scene.id, 'action', e.currentTarget.textContent)}
-                    className="screenplay-block text-sm text-white/70 mb-5 outline-none leading-relaxed
-                     focus:bg-white/5 rounded px-1 -mx-1 transition-colors min-h-[2em] whitespace-pre-wrap"
+                    className={`screenplay-block text-sm text-white/70 mb-5 outline-none leading-relaxed rounded px-1 -mx-1 transition-colors min-h-[2em] whitespace-pre-wrap ${!isReadOnly ? 'focus:bg-white/5' : ''}`}
                 >
                     {scene.action}
                 </div>

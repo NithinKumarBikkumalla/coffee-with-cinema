@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Film, ArrowLeft, Download, History, Loader2, AlertCircle, HelpCircle, MessageSquare } from 'lucide-react'
+import { Film, ArrowLeft, Download, History, Loader2, AlertCircle, HelpCircle, MessageSquare, Share2, Eye } from 'lucide-react'
 import { useProject } from '../hooks/useProject'
 import ScreenplayEditor from '../components/editor/ScreenplayEditor'
 import CharacterList from '../components/characters/CharacterList'
@@ -12,6 +12,7 @@ import HelpModal from '../components/modals/HelpModal'
 import ContactModal from '../components/modals/ContactModal'
 import ShotListPanel from '../components/shots/ShotListPanel'
 import EndingsPanel from '../components/endings/EndingsPanel'
+import ShareModal from '../components/modals/ShareModal'
 
 const TABS = [
     { id: 'storyline', label: '📖 Story Line' },
@@ -30,7 +31,10 @@ export default function ProjectView() {
     const [showVersions, setShowVersions] = useState(false)
     const [showHelp, setShowHelp] = useState(false)
     const [showContact, setShowContact] = useState(false)
+    const [showShare, setShowShare] = useState(false)
     const [error, setError] = useState(null)
+    const isReadOnly = project?.collaboratorRole === 'viewer'
+    const isOwner = !project?.collaboratorRole && project?.userId // If no collab role, they are owner
 
     useEffect(() => {
         loadProject(id).catch(() => setError('Project not found or access denied'))
@@ -88,6 +92,12 @@ export default function ProjectView() {
                             <MessageSquare className="w-4 h-4" />
                             <span className="hidden sm:block">Contact</span>
                         </button>
+                        {isOwner && (
+                            <button onClick={() => setShowShare(true)} className="btn-ghost p-1.5 sm:p-2 sm:px-3 text-sm flex items-center gap-1.5" title="Share Project">
+                                <Share2 className="w-4 h-4" />
+                                <span className="hidden sm:block">Share</span>
+                            </button>
+                        )}
                         <button
                             id="version-history-btn"
                             onClick={() => setShowVersions(true)}
@@ -140,28 +150,35 @@ export default function ProjectView() {
                                         } catch { }
                                     }
                                 }}
-                                className="w-full bg-transparent text-lg md:text-xl text-white/90 leading-relaxed font-serif animate-slide-up text-center resize-none outline-none border-b border-white/0 focus:border-white/20 transition-colors pb-2"
+                                readOnly={isReadOnly}
+                                className={`w-full bg-transparent text-lg md:text-xl text-white/90 leading-relaxed font-serif animate-slide-up text-center resize-none outline-none border-b border-white/0 focus:border-white/20 transition-colors pb-2 ${isReadOnly ? 'cursor-default' : ''}`}
                                 rows={6}
                                 placeholder="Write your core story idea here..."
                             />
-                            <p className="text-white/30 text-xs mt-4">You can edit your story idea here at any time. Click away to save.</p>
+                            {!isReadOnly && <p className="text-white/30 text-xs mt-4">You can edit your story idea here at any time. Click away to save.</p>}
+                            {isReadOnly && (
+                                <div className="mt-4 flex items-center justify-center gap-1.5 text-white/30 text-xs">
+                                    <Eye className="w-3.5 h-3.5" />
+                                    Read-only view
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
                 {activeTab === 'screenplay' && (
-                    <ScreenplayEditor project={project} setProject={setProject} />
+                    <ScreenplayEditor project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
                 {activeTab === 'characters' && (
-                    <CharacterList project={project} setProject={setProject} />
+                    <CharacterList project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
                 {activeTab === 'sound' && (
-                    <SoundDesignPanel project={project} setProject={setProject} />
+                    <SoundDesignPanel project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
                 {activeTab === 'shots' && (
-                    <ShotListPanel project={project} setProject={setProject} />
+                    <ShotListPanel project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
                 {activeTab === 'endings' && (
-                    <EndingsPanel project={project} setProject={setProject} />
+                    <EndingsPanel project={project} setProject={setProject} isReadOnly={isReadOnly} />
                 )}
             </main>
 
@@ -176,6 +193,7 @@ export default function ProjectView() {
 
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
             {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+            {showShare && project && <ShareModal project={project} onClose={() => setShowShare(false)} />}
         </div>
     )
 }

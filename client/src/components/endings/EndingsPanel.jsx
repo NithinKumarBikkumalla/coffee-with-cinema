@@ -105,7 +105,7 @@ function EndingCard({ ending }) {
     )
 }
 
-export default function EndingsPanel({ project, setProject }) {
+export default function EndingsPanel({ project, setProject, isReadOnly }) {
     const [generating, setGenerating] = useState(false)
 
     let endings = []
@@ -147,14 +147,16 @@ export default function EndingsPanel({ project, setProject }) {
                     <span className="text-white/20">·</span>
                     <span className="flex items-center gap-1 text-purple-400 text-sm font-semibold">🌀 Twist Ending</span>
                 </div>
-                <button
-                    onClick={handleGenerate}
-                    disabled={generating || !project?.scenes?.length}
-                    className="btn-primary flex items-center gap-2 mx-auto"
-                >
-                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {!project?.scenes?.length ? 'Generate Screenplay First' : 'Generate 3 Endings'}
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={handleGenerate}
+                        disabled={generating || !project?.scenes?.length}
+                        className="btn-primary flex items-center gap-2 mx-auto"
+                    >
+                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {!project?.scenes?.length ? 'Generate Screenplay First' : 'Generate 3 Endings'}
+                    </button>
+                )}
             </div>
         )
     }
@@ -170,14 +172,16 @@ export default function EndingsPanel({ project, setProject }) {
                     </div>
                     <p className="text-white/40 text-sm mt-1">Three different ways your story could end</p>
                 </div>
-                <button
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="btn-secondary flex items-center gap-2 text-sm"
-                >
-                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Regenerate All
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="btn-secondary flex items-center gap-2 text-sm"
+                    >
+                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        Regenerate All
+                    </button>
+                )}
             </div>
 
             <div className="grid lg:grid-cols-3 gap-5">

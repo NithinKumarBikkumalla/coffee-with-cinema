@@ -12,7 +12,7 @@ const TYPE_ICONS = {
     Mentor: <Shield className="w-5 h-5 text-purple-400" />,
 }
 
-export default function CharacterRelationshipMap({ project, setProject }) {
+export default function CharacterRelationshipMap({ project, setProject, isReadOnly }) {
     const [generating, setGenerating] = useState(false)
     let relationships = []
     try {
@@ -55,10 +55,12 @@ export default function CharacterRelationshipMap({ project, setProject }) {
                 <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">
                     Generate a dynamic web of connections between your characters. See who are friends, enemies, rivals, and lovers.
                 </p>
-                <button onClick={handleGenerate} disabled={generating || project?.characters?.length < 2} className="btn-primary flex items-center gap-2 mx-auto">
-                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Network className="w-4 h-4" />}
-                    {project?.characters?.length < 2 ? 'Need 2+ characters to generate' : 'Generate Map'}
-                </button>
+                {!isReadOnly && (
+                    <button onClick={handleGenerate} disabled={generating || project?.characters?.length < 2} className="btn-primary flex items-center gap-2 mx-auto">
+                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Network className="w-4 h-4" />}
+                        {project?.characters?.length < 2 ? 'Need 2+ characters to generate' : 'Generate Map'}
+                    </button>
+                )}
             </div>
         )
     }
@@ -78,13 +80,15 @@ export default function CharacterRelationshipMap({ project, setProject }) {
                         <p className="text-white/40 text-sm">{relationships.length} connections forged</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleGenerate}
-                    disabled={generating}
-                    className="p-2 text-white/30 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all duration-200"
-                >
-                    {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={handleGenerate}
+                        disabled={generating}
+                        className="p-2 text-white/30 hover:text-gold-400 hover:bg-gold-500/10 rounded-lg transition-all duration-200"
+                    >
+                        {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                    </button>
+                )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 relative z-10">
