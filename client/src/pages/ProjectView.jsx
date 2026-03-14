@@ -11,6 +11,7 @@ import VersionHistoryModal from '../components/modals/VersionHistoryModal'
 import HelpModal from '../components/modals/HelpModal'
 import ContactModal from '../components/modals/ContactModal'
 import ShotListPanel from '../components/shots/ShotListPanel'
+import EndingsPanel from '../components/endings/EndingsPanel'
 
 const TABS = [
     { id: 'storyline', label: '📖 Story Line' },
@@ -18,6 +19,7 @@ const TABS = [
     { id: 'characters', label: '🎭 Characters' },
     { id: 'sound', label: '🎵 Sound Design' },
     { id: 'shots', label: '🎥 Shot List' },
+    { id: 'endings', label: '🔀 Endings' },
 ]
 
 export default function ProjectView() {
@@ -157,6 +159,9 @@ export default function ProjectView() {
                 )}
                 {activeTab === 'shots' && (
                     <ShotListPanel project={project} setProject={setProject} />
+                )}
+                {activeTab === 'endings' && (
+                    <EndingsPanel project={project} setProject={setProject} />
                 )}
             </main>
 

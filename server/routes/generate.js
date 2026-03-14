@@ -6,7 +6,7 @@ const { pipeSSE } = require('../services/streamService')
 const {
     buildScreenplayPrompt, buildCharacterPrompt,
     buildSoundPrompt, buildSchedulePrompt, buildRegeneratePrompt,
-    buildDialoguePrompt, buildRelationshipPrompt, buildShotListPrompt,
+    buildDialoguePrompt, buildRelationshipPrompt, buildShotListPrompt, buildEndingsPrompt,
 } = require('../services/promptBuilder')
 
 // POST /api/generate/screenplay — SSE streaming
@@ -230,6 +230,38 @@ router.post('/shot-list', async (req, res) => {
     } catch (err) {
         console.error('Shot list generation error:', err)
         res.status(500).json({ message: err.message || 'Shot list generation failed' })
+    }
+})
+
+// POST /api/generate/endings — JSON
+router.post('/endings', async (req, res) => {
+    try {
+        const { projectId } = req.body
+        const project = await prisma.project.findUnique({
+            where: { id: projectId },
+            include: { scenes: { orderBy: { order: 'desc' }, take: 3 } },
+        })
+        if (!project || project.userId !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        if (!project.scenes.length) return res.status(400).json({ message: 'Generate a screenplay first.' })
+
+        const lastSceneAction = project.scenes[0]?.action || project.premise
+        const prompt = buildEndingsPrompt(project.title, project.genre, project.tone, project.premise, lastSceneAction)
+        let endingsData = await generateJSON(prompt)
+
+        if (!Array.isArray(endingsData)) {
+            if (endingsData && Array.isArray(endingsData.endings)) endingsData = endingsData.endings
+            else endingsData = []
+        }
+
+        const updated = await prisma.project.update({
+            where: { id: projectId },
+            data: { endings: endingsData },
+        })
+
+        res.json(updated.endings)
+    } catch (err) {
+        console.error('Endings generation error:', err)
+        res.status(500).json({ message: err.message || 'Endings generation failed' })
     }
 })
 

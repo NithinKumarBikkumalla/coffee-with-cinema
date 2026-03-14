@@ -35,6 +35,7 @@ model Project {
   roles        Json?
   relationshipMap Json @default("[]")
   shotList    Json @default("[]")
+  endings     Json @default("[]")
   exports     ExportLog[]
 }
 

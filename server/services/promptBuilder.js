@@ -227,6 +227,48 @@ Use professional movements: Static, Pan, Tilt, Dolly In, Dolly Out, Tracking, Ha
   }
 }
 
+function buildEndingsPrompt(title, genre, tone, premise, lastSceneAction) {
+  return {
+    system: `You are a master storyteller and Hollywood screenwriter. Generate multiple alternate endings. Always return VALID JSON only.`,
+    user: `For the ${genre} film "${title}" (${tone} tone):
+Premise: ${premise}
+Story so far (last scene): ${lastSceneAction}
+
+Generate exactly 3 compelling alternate endings for this story.
+
+Return ONLY this JSON array:
+[
+  {
+    "type": "Happy Ending",
+    "emoji": "😊",
+    "title": "Short catchy title for this ending",
+    "summary": "2-3 sentences describing how the story resolves",
+    "final_scene": {
+      "slugline": "INT./EXT. LOCATION - TIME",
+      "action": "Vivid 2-4 sentence description of the final scene action.",
+      "dialogue": [
+        { "character": "CHARACTER", "line": "Final powerful line of dialogue.", "parenthetical": "tone" }
+      ]
+    }
+  },
+  {
+    "type": "Tragic Ending",
+    "emoji": "💔",
+    "title": "Short catchy title for this ending",
+    "summary": "2-3 sentences",
+    "final_scene": { "slugline": "", "action": "", "dialogue": [] }
+  },
+  {
+    "type": "Twist Ending",
+    "emoji": "🌀",
+    "title": "Short catchy title for this ending",
+    "summary": "2-3 sentences",
+    "final_scene": { "slugline": "", "action": "", "dialogue": [] }
+  }
+]`,
+  }
+}
+
 module.exports = {
   buildScreenplayPrompt,
   buildCharacterPrompt,
@@ -236,4 +278,5 @@ module.exports = {
   buildDialoguePrompt,
   buildRelationshipPrompt,
   buildShotListPrompt,
+  buildEndingsPrompt,
 }
